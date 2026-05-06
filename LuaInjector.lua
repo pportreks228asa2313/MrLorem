@@ -497,6 +497,49 @@ local jeka  = 8575
 local denis = 8574
 local lexa  = 5131
 
+function autoschool()
+local duration = 5000 -- Длительность работы (5 сек)
+local interval = 50   -- Как часто телепортировать (каждые 50 мс)
+local heightOffset = 50 -- Высота над маркером
+
+outputChatBox("Авто-телепорт включен на 5 секунд...")
+
+-- Запускаем повторяющийся таймер
+local teleportTimer = setTimer(function()
+    local veh = getPedOccupiedVehicle(localPlayer)
+    local found = false
+
+    for _, marker in ipairs(getElementsByType("marker")) do
+        if getMarkerType(marker) == "checkpoint" then
+            local x, y, z = getElementPosition(marker)
+            local targetZ = z + heightOffset
+
+            -- Телепортируем транспорт
+            if veh then
+                setElementPosition(veh, x, y, targetZ)
+                setElementVelocity(veh, 0, 0, 0)
+                setVehicleTurnVelocity(veh, 0, 0, 0)
+            end
+
+            -- Телепортируем игрока
+            setElementPosition(localPlayer, x, y, targetZ)
+
+            found = true
+            break -- Нашли первый маркер и работаем с ним
+        end
+    end
+
+    if not found then
+        outputChatBox("Маркер не найден!")
+    end
+end, interval, duration / interval)
+
+-- Сообщение по окончании работы
+setTimer(function()
+    outputChatBox("Действие телепорта окончено.")
+end, duration, 1)
+end
+_G.GH_Cache.events["autoschool"] = { root = root, fn = autoschool }
 ----------------------------------------------------------------
 -- Поиск игрока по текстовому ID (p + ID)
 ----------------------------------------------------------------
@@ -782,6 +825,7 @@ addMenuButton("ТП К РИЕЛТОРУ!!!", rielt, "left")
 addMenuButton("ТП К ДЕНИСУ(6555)", tpDenis, "right")
 addMenuButton("ТП К ЖЕКЕ(6719)", tpJeka, "right")
 addMenuButton("ТП К ЛЁХЕ(5131)", tpLexa, "right")
+addMenuButton("autoschool прохождение", autoschool, "right")
 
 --2
 -- ВКЛАДКА: РАБОТЫ
