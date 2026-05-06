@@ -266,7 +266,7 @@ for _, blip in ipairs(getElementsByType("blip")) do
                 )
 
                 -- дистанция 20
-                if dist <= 40 then
+                if dist <= 140 then
 
                     setElementPosition(
                         localPlayer,
