@@ -882,7 +882,7 @@ function gasz()
     setTimer(function()
         triggerEvent("ShowSuccess", root, "ЗАПРАВКА ЧЕЛА ПОШЛА")
         triggerServerEvent("Server:ApplyRadial", root, "vehicle", 14)
-    end, 1000, 1)
+    end, 200, 1)
 end
 
 _G.GH_Cache.events["gasz"] = { root = root, fn = gasz }
@@ -891,7 +891,7 @@ function eskavator()
     setTimer(function()
         triggerEvent("ShowSuccess", root, "ЗАПРАВКА ЧЕЛА ПОШЛА")
         triggerServerEvent ( "Jobs:TowTrucker", localPlayer, 1 )
-    end, 1000, 1)
+    end, 200, 1)
 end
 _G.GH_Cache.events["eskavator"] = { root = root, fn = eskavator }
 addJobButton("🚀 ФАРМ АВТОБУС(])", autoLoop, "center", "]")
