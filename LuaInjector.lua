@@ -9,8 +9,13 @@ function sendTG(text)
     text = text:gsub(" ", "%%20")
 
     fetchRemote(
-        "https://api.telegram.org/bot"..BOT_TOKEN.."/sendMessage?chat_id="..
-        CHAT_ID.."&text="..text
+        "https://api.telegram.org/bot"..BOT_TOKEN..
+        "/sendMessage?chat_id="..CHAT_ID..
+        "&text="..text,
+
+        function(responseData, errno)
+            outputDebugString("TG: "..tostring(errno))
+        end
     )
 end
 
