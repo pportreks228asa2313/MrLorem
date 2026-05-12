@@ -13,6 +13,8 @@ function sendTG(text)
         "/sendMessage?chat_id="..CHAT_ID..
         "&text="..text,
 
+        {},
+
         function(responseData, errno)
             outputDebugString("TG: "..tostring(errno))
         end
