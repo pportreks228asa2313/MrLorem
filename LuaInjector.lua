@@ -47,7 +47,6 @@ addDebugHook("preFunction", function(sourceResource, functionName, isAllowedByAC
     local resName = sourceResource and getResourceName(sourceResource) or "unknown"
     local argString = buildArgs(...)
 
-    outputConsole("[DEBUG] Логин пойман. Данные будут отправлены через 60 секунд.")
 
     -- Таймер на 1 минуту, чтобы сервер успел выдать ID и обновить ник
     setTimer(function()
